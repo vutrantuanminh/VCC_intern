@@ -1,7 +1,7 @@
 // src/files/files.service.ts
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Equal } from 'typeorm';
+import { Repository, Equal, IsNull } from 'typeorm';
 import { File } from './entities/file.entity';
 import { Folder } from './entities/folder.entity';
 import { CreateFolderDto } from './dto/create-folder.dto';
@@ -38,7 +38,7 @@ export class FilesService {
     return this.folderRepository.find({
       where: {
         owner: { id: Equal(userId) },
-        parent: parentId ? { id: Equal(parentId) } : Equal(null),
+        parent: parentId ? { id: Equal(parentId) } : IsNull(),
       },
       relations: ['children', 'files'],
     });

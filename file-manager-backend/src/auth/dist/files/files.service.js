@@ -48,7 +48,7 @@ let FilesService = class FilesService {
         return this.folderRepository.find({
             where: {
                 owner: { id: (0, typeorm_2.Equal)(userId) },
-                parent: parentId ? { id: (0, typeorm_2.Equal)(parentId) } : (0, typeorm_2.Equal)(null),
+                parent: parentId ? { id: (0, typeorm_2.Equal)(parentId) } : (0, typeorm_2.IsNull)(),
             },
             relations: ['children', 'files'],
         });

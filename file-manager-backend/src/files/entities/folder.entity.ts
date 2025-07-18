@@ -12,7 +12,7 @@ export class Folder {
   name: string;
 
   @ManyToOne(() => User, (user) => user.id)
-  owner: User;
+  owner: User; //Một user có nhiều folder
 
   @ManyToOne(() => Folder, (folder) => folder.children, { nullable: true })
   parent: Folder | null; // Thêm | null để TypeScript hiểu
