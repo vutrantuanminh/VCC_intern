@@ -13,7 +13,7 @@ export declare class AuthService {
             email: string;
             username: string;
             gender: import("../users/entities/user.entity").Gender;
-            phone_number: number;
+            phone_number: string;
         };
     }>;
     login(loginDto: LoginDto): Promise<{

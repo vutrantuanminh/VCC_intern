@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const roles_guard_1 = require("../auth/roles.guard");
 const roles_decorator_1 = require("../auth/roles.decorator");
+const swagger_1 = require("@nestjs/swagger");
 let UsersController = class UsersController {
     getProfile(req) {
         return req.user;
@@ -27,12 +28,17 @@ __decorate([
     (0, common_1.Get)('profile'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: 'Lấy thông tin hồ sơ người dùng' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Thông tin hồ sơ người dùng' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "getProfile", null);
 exports.UsersController = UsersController = __decorate([
+    (0, swagger_1.ApiTags)('Users'),
     (0, common_1.Controller)('users')
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map

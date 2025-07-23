@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const register_dto_1 = require("./dto/register.dto");
 const login_dto_1 = require("./dto/login.dto");
+const swagger_1 = require("@nestjs/swagger");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -33,6 +34,9 @@ exports.AuthController = AuthController;
 __decorate([
     (0, common_1.Post)('register'),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Đăng ký người dùng mới' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Đăng ký thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Dữ liệu đầu vào không hợp lệ' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
@@ -41,12 +45,16 @@ __decorate([
 __decorate([
     (0, common_1.Post)('login'),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Đăng nhập người dùng' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Đăng nhập thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Thông tin đăng nhập không hợp lệ' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [login_dto_1.LoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 exports.AuthController = AuthController = __decorate([
+    (0, swagger_1.ApiTags)('Auth'),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], AuthController);

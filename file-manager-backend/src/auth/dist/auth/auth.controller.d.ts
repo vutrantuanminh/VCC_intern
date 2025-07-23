@@ -11,7 +11,7 @@ export declare class AuthController {
             email: string;
             username: string;
             gender: import("../users/entities/user.entity").Gender;
-            phone_number: number;
+            phone_number: string;
         };
     }>;
     login(loginDto: LoginDto): Promise<{

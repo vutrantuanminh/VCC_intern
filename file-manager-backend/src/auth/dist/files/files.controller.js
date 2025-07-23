@@ -23,50 +23,79 @@ const roles_decorator_1 = require("../auth/roles.decorator");
 const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const path_1 = require("path");
+const swagger_1 = require("@nestjs/swagger");
+const class_transformer_1 = require("class-transformer");
 let FilesController = class FilesController {
     filesService;
     constructor(filesService) {
         this.filesService = filesService;
     }
-    createFolder(req, createFolderDto) {
-        return this.filesService.createFolder(req.user.id, createFolderDto);
+    createFolder(req, createFolderDto, ownerId) {
+        const folder = this.filesService.createFolder(req.user.id, req.user.role, createFolderDto, ownerId);
+        return (0, class_transformer_1.instanceToPlain)(folder);
     }
     getFolders(req, parentId) {
-        return this.filesService.findFolders(req.user.id, parentId);
+        return this.filesService.listFolders(req.user.id, req.user.role, parentId);
     }
     getFolderById(req, id) {
-        return this.filesService.findFolderById(req.user.id, id);
+        return this.filesService.findFolderById(req.user.id, req.user.role, id);
     }
     updateFolder(req, id, updateFolderDto) {
-        return this.filesService.updateFolder(req.user.id, id, updateFolderDto);
+        return this.filesService.updateFolder(req.user.id, req.user.role, id, updateFolderDto);
     }
     deleteFolder(req, id) {
-        return this.filesService.deleteFolder(req.user.id, id);
+        return this.filesService.deleteFolder(req.user.id, req.user.role, id);
     }
-    uploadFile(req, file, folderId) {
-        return this.filesService.uploadFile(req.user.id, file, folderId);
+    uploadFile(req, file, folderId, ownerId) {
+        return this.filesService.uploadFile(req.user.id, req.user.role, file, folderId, ownerId);
     }
     async downloadFile(req, id, res) {
-        const file = await this.filesService.findFileById(req.user.id, id);
+        const file = await this.filesService.findFileById(req.user.id, req.user.role, id);
         return res.sendFile(file.path, { root: '.' });
     }
     deleteFile(req, id) {
-        return this.filesService.deleteFile(req.user.id, id);
+        return this.filesService.deleteFile(req.user.id, req.user.role, id);
     }
 };
 exports.FilesController = FilesController;
 __decorate([
     (0, common_1.Post)('folders'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Tạo thư mục mới' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Thư mục được tạo thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                name: { type: 'string', description: 'Tên thư mục' },
+                parentId: { type: 'number', description: 'ID thư mục cha (tùy chọn)', nullable: true },
+                ownerId: { type: 'number', description: 'ID người sở hữu (chỉ dành cho admin)', nullable: true },
+            },
+        },
+    }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Body)('ownerId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, create_folder_dto_1.CreateFolderDto]),
+    __metadata("design:paramtypes", [Object, create_folder_dto_1.CreateFolderDto, Number]),
     __metadata("design:returntype", void 0)
 ], FilesController.prototype, "createFolder", null);
 __decorate([
     (0, common_1.Get)('folders'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Lấy danh sách thư mục' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Danh sách thư mục' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
+    (0, swagger_1.ApiQuery)({
+        name: 'parentId',
+        type: Number,
+        description: 'ID của thư mục cha (tùy chọn)',
+        required: false,
+        example: 1,
+    }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Query)('parentId')),
     __metadata("design:type", Function),
@@ -76,6 +105,10 @@ __decorate([
 __decorate([
     (0, common_1.Get)('folders/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Lấy thông tin thư mục theo ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Thông tin thư mục' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -85,6 +118,10 @@ __decorate([
 __decorate([
     (0, common_1.Patch)('folders/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Cập nhật thông tin thư mục' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Thư mục được cập nhật thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Body)()),
@@ -95,6 +132,10 @@ __decorate([
 __decorate([
     (0, common_1.Delete)('folders/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Xóa thư mục' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Thư mục được xóa thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -104,6 +145,35 @@ __decorate([
 __decorate([
     (0, common_1.Post)('upload'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Tải lên tệp' }),
+    (0, swagger_1.ApiConsumes)('multipart/form-data'),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                    description: 'Tệp cần tải lên',
+                },
+                folderId: {
+                    type: 'number',
+                    description: 'ID của thư mục (tùy chọn)',
+                    example: 1,
+                    nullable: true,
+                },
+                ownerId: {
+                    type: 'number',
+                    description: 'ID người sở hữu (chỉ dành cho admin)',
+                    example: 1,
+                    nullable: true,
+                },
+            },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Tệp được tải lên thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
         storage: (0, multer_1.diskStorage)({
             destination: './uploads',
@@ -116,13 +186,18 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.UploadedFile)()),
     __param(2, (0, common_1.Body)('folderId')),
+    __param(3, (0, common_1.Body)('ownerId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, Number]),
+    __metadata("design:paramtypes", [Object, Object, Number, Number]),
     __metadata("design:returntype", void 0)
 ], FilesController.prototype, "uploadFile", null);
 __decorate([
     (0, common_1.Get)('download/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Tải xuống tệp theo ID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Tệp được tải xuống thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Tệp không tìm thấy' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
     __param(2, (0, common_1.Response)()),
@@ -133,6 +208,10 @@ __decorate([
 __decorate([
     (0, common_1.Delete)('files/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Xóa tệp' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Tệp được xóa thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Tệp không tìm thấy' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -140,8 +219,10 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], FilesController.prototype, "deleteFile", null);
 exports.FilesController = FilesController = __decorate([
+    (0, swagger_1.ApiTags)('Files'),
     (0, common_1.Controller)('files'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
+    (0, swagger_1.ApiBearerAuth)(),
     __metadata("design:paramtypes", [files_service_1.FilesService])
 ], FilesController);
 //# sourceMappingURL=files.controller.js.map

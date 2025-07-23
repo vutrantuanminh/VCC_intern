@@ -20,7 +20,7 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { id: Equal(id) } });
   }
 
-  async create(email: string, password: string, gender: Gender, phone_number: number, username: string): Promise<User> {
+  async create(email: string, password: string, gender: Gender, phone_number: string, username: string): Promise<User> {
     const existingUser = await this.findOne(email);
     if (existingUser) {
       throw new ConflictException('Email already exists');

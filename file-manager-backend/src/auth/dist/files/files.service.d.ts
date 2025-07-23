@@ -9,12 +9,12 @@ export declare class FilesService {
     private folderRepository;
     private usersService;
     constructor(fileRepository: Repository<File>, folderRepository: Repository<Folder>, usersService: UsersService);
-    createFolder(userId: number, createFolderDto: CreateFolderDto): Promise<Folder>;
-    findFolders(userId: number, parentId?: number): Promise<Folder[]>;
-    findFolderById(userId: number, folderId: number): Promise<Folder>;
-    updateFolder(userId: number, folderId: number, updateFolderDto: UpdateFolderDto): Promise<Folder>;
-    deleteFolder(userId: number, folderId: number): Promise<void>;
-    uploadFile(userId: number, file: Express.Multer.File, folderId?: number): Promise<File>;
-    findFileById(userId: number, fileId: number): Promise<File>;
-    deleteFile(userId: number, fileId: number): Promise<void>;
+    createFolder(userId: number, role: string, createFolderDto: CreateFolderDto, ownerId?: number): Promise<Folder>;
+    listFolders(userId: number, role: string, parentId?: number): Promise<Folder[]>;
+    findFolderById(userId: number, role: string, folderId: number): Promise<Folder>;
+    updateFolder(userId: number, role: string, folderId: number, updateFolderDto: UpdateFolderDto): Promise<Folder>;
+    deleteFolder(userId: number, role: string, folderId: number): Promise<void>;
+    uploadFile(userId: number, role: string, file: Express.Multer.File, folderId?: number, ownerId?: number): Promise<File>;
+    findFileById(userId: number, role: string, fileId: number): Promise<File>;
+    deleteFile(userId: number, role: string, fileId: number): Promise<void>;
 }

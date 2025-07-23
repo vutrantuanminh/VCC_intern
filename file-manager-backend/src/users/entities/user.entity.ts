@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 export enum Gender {
   MALE = 'male',
@@ -17,6 +18,7 @@ export class User {
   @Column({ nullable: true })
   username: string;
 
+  @Exclude()
   @Column()
   password: string;
 
@@ -31,5 +33,5 @@ export class User {
   gender: Gender;
 
   @Column({ nullable: true })
-  phone_number: number;
+  phone_number: string;
 }

@@ -6,5 +6,5 @@ export declare class UsersService {
     constructor(usersRepository: Repository<User>);
     findOne(email: string): Promise<User | null>;
     findOneById(id: number): Promise<User | null>;
-    create(email: string, password: string, gender: Gender, phone_number: number, username: string): Promise<User>;
+    create(email: string, password: string, gender: Gender, phone_number: string, username: string): Promise<User>;
 }

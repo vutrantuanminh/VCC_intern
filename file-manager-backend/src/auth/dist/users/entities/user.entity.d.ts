@@ -9,5 +9,5 @@ export declare class User {
     password: string;
     role: 'user' | 'admin';
     gender: Gender;
-    phone_number: number;
+    phone_number: string;
 }

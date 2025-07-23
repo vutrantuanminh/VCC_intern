@@ -11,19 +11,29 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateFolderDto = void 0;
 const class_validator_1 = require("class-validator");
+const swagger_1 = require("@nestjs/swagger");
 class UpdateFolderDto {
     name;
     parentId;
+    ownerId;
 }
 exports.UpdateFolderDto = UpdateFolderDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Tên mới của thư mục (tùy chọn)', example: 'UpdatedFolder', required: false }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], UpdateFolderDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID của thư mục cha (tùy chọn)', example: 1, required: false }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], UpdateFolderDto.prototype, "parentId", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID người sở hữu mới (chỉ dành cho admin, tùy chọn)', example: 1, required: false }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsInt)(),
+    __metadata("design:type", Number)
+], UpdateFolderDto.prototype, "ownerId", void 0);
 //# sourceMappingURL=update-folder.dto.js.map

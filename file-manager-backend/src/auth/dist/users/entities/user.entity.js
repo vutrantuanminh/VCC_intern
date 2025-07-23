@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = exports.Gender = void 0;
 const typeorm_1 = require("typeorm");
+const class_transformer_1 = require("class-transformer");
 var Gender;
 (function (Gender) {
     Gender["MALE"] = "male";
@@ -39,6 +40,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "username", void 0);
 __decorate([
+    (0, class_transformer_1.Exclude)(),
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
@@ -56,7 +58,7 @@ __decorate([
 ], User.prototype, "gender", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", Number)
+    __metadata("design:type", String)
 ], User.prototype, "phone_number", void 0);
 exports.User = User = __decorate([
     (0, typeorm_1.Entity)()
