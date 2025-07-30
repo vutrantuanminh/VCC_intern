@@ -3,6 +3,7 @@ import { Response as ExpressResponse } from 'express';
 import { FilesService } from './files.service';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
+import { UserContextDto } from '../users/dto/user-context.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -35,7 +36,11 @@ export class FilesController {
     },
   })
   createFolder(@Request() req, @Body() createFolderDto: CreateFolderDto, @Body('ownerId') ownerId?: number) {
-    return this.filesService.createFolder(req.user.id, req.user.role, createFolderDto, ownerId);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.createFolder(userContext, createFolderDto, ownerId);
   }
 
   @Get('folders')
@@ -52,7 +57,11 @@ export class FilesController {
     example: 1,
   })
   getFolders(@Request() req, @Query('parentId') parentId?: number) {
-    return this.filesService.listFolders(req.user.id, req.user.role, parentId);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.listFolders(userContext, parentId);
   }
 
   @Get('folders/:id')
@@ -62,7 +71,11 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Thông tin thư mục' })
   @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
   getFolderById(@Request() req, @Param('id') id: number) {
-    return this.filesService.findFolderById(req.user.id, req.user.role, id);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.findFolderById(userContext, id);
   }
 
   @Patch('folders/:id')
@@ -72,7 +85,11 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Thư mục được cập nhật thành công' })
   @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
   updateFolder(@Request() req, @Param('id') id: number, @Body() updateFolderDto: UpdateFolderDto) {
-    return this.filesService.updateFolder(req.user.id, req.user.role, id, updateFolderDto);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.updateFolder(userContext, id, updateFolderDto);
   }
 
   @Delete('folders/:id')
@@ -82,7 +99,11 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Thư mục được xóa thành công' })
   @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
   deleteFolder(@Request() req, @Param('id') id: number) {
-    return this.filesService.deleteFolder(req.user.id, req.user.role, id);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.deleteFolder(userContext, id);
   }
 
   @Post('upload')
@@ -105,12 +126,6 @@ export class FilesController {
           example: 1,
           nullable: true,
         },
-        ownerId: {
-          type: 'number',
-          description: 'ID người sở hữu (chỉ dành cho admin)',
-          example: 1,
-          nullable: true,
-        },
       },
     },
   })
@@ -120,13 +135,42 @@ export class FilesController {
     storage: diskStorage({
       destination: './uploads',
       filename: (req, file, cb) => {
-        const randomName = Array(32).fill(null).map(() => Math.round(Math.random() * 16).toString(16)).join('');
+        const randomName = Array(32)
+          .fill(null)
+          .map(() => Math.round(Math.random() * 16).toString(16))
+          .join('');
         return cb(null, `${randomName}${extname(file.originalname)}`);
       },
     }),
   }))
-  uploadFile(@Request() req, @UploadedFile() file: Express.Multer.File, @Body('folderId') folderId?: number, @Body('ownerId') ownerId?: number) {
-    return this.filesService.uploadFile(req.user.id, req.user.role, file, folderId, ownerId);
+  uploadFile(@Request() req, @UploadedFile() file: Express.Multer.File, @Body('folderId') folderId?: number) {
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.uploadFile(userContext, file, folderId);
+  }
+
+  @Get('files')
+  @Roles('user', 'admin')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  @ApiOperation({ summary: 'Liệt kê tệp theo thư mục' })
+  @ApiQuery({
+    name: 'folderId',
+    type: Number,
+    description: 'ID của thư mục (tùy chọn)',
+    required: false,
+    example: 1,
+  })
+  @ApiResponse({ status: 200, description: 'Danh sách tệp được trả về thành công' })
+  @ApiResponse({ status: 401, description: 'Không được phép (Unauthorized)' })
+  @ApiResponse({ status: 404, description: 'Thư mục không tồn tại' })
+  listFiles(@Request() req, @Query('folderId') folderId?: number) {
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.listFiles(userContext, folderId);
   }
 
   @Get('download/:id')
@@ -136,7 +180,11 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Tệp được tải xuống thành công' })
   @ApiResponse({ status: 404, description: 'Tệp không tìm thấy' })
   async downloadFile(@Request() req, @Param('id') id: number, @Response() res: ExpressResponse) {
-    const file = await this.filesService.findFileById(req.user.id, req.user.role, id);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    const file = await this.filesService.findFileById(userContext, id);
     return res.sendFile(file.path, { root: '.' });
   }
 
@@ -147,6 +195,10 @@ export class FilesController {
   @ApiResponse({ status: 200, description: 'Tệp được xóa thành công' })
   @ApiResponse({ status: 404, description: 'Tệp không tìm thấy' })
   deleteFile(@Request() req, @Param('id') id: number) {
-    return this.filesService.deleteFile(req.user.id, req.user.role, id);
+    const userContext: UserContextDto = {
+      userId: req.user.id,
+      role: req.user.role,
+    };
+    return this.filesService.deleteFile(userContext, id);
   }
 }

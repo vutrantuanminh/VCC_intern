@@ -24,37 +24,74 @@ const platform_express_1 = require("@nestjs/platform-express");
 const multer_1 = require("multer");
 const path_1 = require("path");
 const swagger_1 = require("@nestjs/swagger");
-const class_transformer_1 = require("class-transformer");
 let FilesController = class FilesController {
     filesService;
     constructor(filesService) {
         this.filesService = filesService;
     }
     createFolder(req, createFolderDto, ownerId) {
-        const folder = this.filesService.createFolder(req.user.id, req.user.role, createFolderDto, ownerId);
-        return (0, class_transformer_1.instanceToPlain)(folder);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.createFolder(userContext, createFolderDto, ownerId);
     }
     getFolders(req, parentId) {
-        return this.filesService.listFolders(req.user.id, req.user.role, parentId);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.listFolders(userContext, parentId);
     }
     getFolderById(req, id) {
-        return this.filesService.findFolderById(req.user.id, req.user.role, id);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.findFolderById(userContext, id);
     }
     updateFolder(req, id, updateFolderDto) {
-        return this.filesService.updateFolder(req.user.id, req.user.role, id, updateFolderDto);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.updateFolder(userContext, id, updateFolderDto);
     }
     deleteFolder(req, id) {
-        return this.filesService.deleteFolder(req.user.id, req.user.role, id);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.deleteFolder(userContext, id);
     }
-    uploadFile(req, file, folderId, ownerId) {
-        return this.filesService.uploadFile(req.user.id, req.user.role, file, folderId, ownerId);
+    uploadFile(req, file, folderId) {
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.uploadFile(userContext, file, folderId);
+    }
+    listFiles(req, folderId) {
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.listFiles(userContext, folderId);
     }
     async downloadFile(req, id, res) {
-        const file = await this.filesService.findFileById(req.user.id, req.user.role, id);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        const file = await this.filesService.findFileById(userContext, id);
         return res.sendFile(file.path, { root: '.' });
     }
     deleteFile(req, id) {
-        return this.filesService.deleteFile(req.user.id, req.user.role, id);
+        const userContext = {
+            userId: req.user.id,
+            role: req.user.role,
+        };
+        return this.filesService.deleteFile(userContext, id);
     }
 };
 exports.FilesController = FilesController;
@@ -163,12 +200,6 @@ __decorate([
                     example: 1,
                     nullable: true,
                 },
-                ownerId: {
-                    type: 'number',
-                    description: 'ID người sở hữu (chỉ dành cho admin)',
-                    example: 1,
-                    nullable: true,
-                },
             },
         },
     }),
@@ -178,7 +209,10 @@ __decorate([
         storage: (0, multer_1.diskStorage)({
             destination: './uploads',
             filename: (req, file, cb) => {
-                const randomName = Array(32).fill(null).map(() => Math.round(Math.random() * 16).toString(16)).join('');
+                const randomName = Array(32)
+                    .fill(null)
+                    .map(() => Math.round(Math.random() * 16).toString(16))
+                    .join('');
                 return cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
             },
         }),
@@ -186,11 +220,31 @@ __decorate([
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.UploadedFile)()),
     __param(2, (0, common_1.Body)('folderId')),
-    __param(3, (0, common_1.Body)('ownerId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, Number, Number]),
+    __metadata("design:paramtypes", [Object, Object, Number]),
     __metadata("design:returntype", void 0)
 ], FilesController.prototype, "uploadFile", null);
+__decorate([
+    (0, common_1.Get)('files'),
+    (0, roles_decorator_1.Roles)('user', 'admin'),
+    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
+    (0, swagger_1.ApiOperation)({ summary: 'Liệt kê tệp theo thư mục' }),
+    (0, swagger_1.ApiQuery)({
+        name: 'folderId',
+        type: Number,
+        description: 'ID của thư mục (tùy chọn)',
+        required: false,
+        example: 1,
+    }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Danh sách tệp được trả về thành công' }),
+    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tồn tại' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Query)('folderId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], FilesController.prototype, "listFiles", null);
 __decorate([
     (0, common_1.Get)('download/:id'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
