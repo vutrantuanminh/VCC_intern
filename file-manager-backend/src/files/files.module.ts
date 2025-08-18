@@ -1,15 +1,23 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { FilesService } from './files.service';
+import multerConfig from '../config/multer.config';
 import { FilesController } from './files.controller';
+import { FilesService } from './files.service';
 import { File } from './entities/file.entity';
 import { Folder } from './entities/folder.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([File, Folder]), UsersModule],
-  providers: [FilesService],
+  imports: [
+    MulterModule.registerAsync({
+      useFactory: multerConfig, 
+    }),
+    TypeOrmModule.forFeature([File, Folder]),
+    UsersModule,
+  ],
   controllers: [FilesController],
-  exports: [FilesService],
+  providers: [FilesService],
+  exports: [FilesService, MulterModule],
 })
 export class FilesModule {}

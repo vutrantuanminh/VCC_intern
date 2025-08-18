@@ -1,0 +1,28 @@
+import { Repository } from 'typeorm';
+import { File } from './entities/file.entity';
+import { Folder } from './entities/folder.entity';
+import { CreateFolderDto } from './dto/create-folder.dto';
+import { UpdateFolderDto } from './dto/update-folder.dto';
+import { FolderOperationDto } from './dto/folder-operation.dto';
+import { FileOperationDto } from './dto/file-operation.dto';
+import { UploadFileDto } from './dto/upload-file.dto';
+import { FileResponseDto } from './dto/file-response.dto';
+import { UserContextDto } from '../users/dto/user-context.dto';
+import { UsersService } from '../users/users.service';
+export declare class FilesService {
+    private fileRepository;
+    private folderRepository;
+    private usersService;
+    constructor(fileRepository: Repository<File>, folderRepository: Repository<Folder>, usersService: UsersService);
+    checkAccess(userContext: UserContextDto, resourceOwnerId: number, resourceType: 'folder' | 'file'): Promise<void>;
+    private buildExternalPath;
+    createFolder(userContext: UserContextDto, createFolderDto: CreateFolderDto): Promise<Folder>;
+    listFolders(userContext: UserContextDto, operationDto: FolderOperationDto): Promise<Folder[]>;
+    findFolderById(userContext: UserContextDto, operationDto: FolderOperationDto): Promise<Folder>;
+    updateFolder(userContext: UserContextDto, operationDto: FolderOperationDto, updateFolderDto: UpdateFolderDto): Promise<Folder>;
+    deleteFolder(userContext: UserContextDto, operationDto: FolderOperationDto): Promise<void>;
+    uploadFile(userContext: UserContextDto, file: Express.Multer.File, uploadFileDto: UploadFileDto): Promise<FileResponseDto>;
+    findFileById(userContext: UserContextDto, operationDto: FileOperationDto): Promise<FileResponseDto>;
+    listFiles(userContext: UserContextDto, operationDto: FolderOperationDto): Promise<FileResponseDto[]>;
+    deleteFile(userContext: UserContextDto, operationDto: FileOperationDto): Promise<void>;
+}

@@ -11,7 +11,10 @@ export class File {
   name: string;
 
   @Column()
-  path: string; // Đường dẫn file trên server
+  path: string; // Đường dẫn nội bộ của file trên server
+
+  @Column()
+  externalPath: string; // Đường dẫn công khai (ví dụ: /files/download/:fileId)
 
   @Column()
   mimeType: string; // Loại file (e.g., image/png)

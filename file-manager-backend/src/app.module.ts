@@ -1,31 +1,26 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { User } from './users/entities/user.entity';
+import { ConfigModule } from '@nestjs/config';
+import appConfig, { appValidationSchema } from './config/app.config';
+import databaseConfig, { databaseValidationSchema } from './config/database.config';
+import { multerValidationSchema } from './config/multer.config';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { FilesModule } from './files/files.module';
-
+import * as Joi from 'joi';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // để không phải import lại ở mỗi module
+      validationSchema: Joi.object()
+        .concat(appValidationSchema)
+        .concat(databaseValidationSchema)
+        .concat(multerValidationSchema),
+      load: [appConfig, databaseConfig],
+      isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST'),
-        port: config.get<number>('DB_PORT'),
-        username: config.get<string>('DB_USERNAME'),
-        password: config.get<string>('DB_PASSWORD'),
-        database: config.get<string>('DB_NAME'),
-        //entities: [User],
-        autoLoadEntities: true,
-        synchronize: true, // ❗Chỉ dùng khi dev, không nên dùng ở production
-      }),
+      useFactory: databaseConfig,
     }),
     AuthModule,
     UsersModule,
