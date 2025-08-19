@@ -16,6 +16,7 @@ const multer_config_1 = require("./config/multer.config");
 const auth_module_1 = require("./auth/auth.module");
 const users_module_1 = require("./users/users.module");
 const files_module_1 = require("./files/files.module");
+const categories_module_1 = require("./categories/categories.module");
 const Joi = require("joi");
 let AppModule = class AppModule {
 };
@@ -37,6 +38,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             users_module_1.UsersModule,
             files_module_1.FilesModule,
+            categories_module_1.CategoriesModule,
         ],
     })
 ], AppModule);

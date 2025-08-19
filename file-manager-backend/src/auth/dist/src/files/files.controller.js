@@ -79,16 +79,12 @@ let FilesController = class FilesController {
             userId: req.user.id,
             role: req.user.role,
         };
-        if (!file) {
-            throw new common_1.BadRequestException('Không có tệp được tải lên');
-        }
-        const folderId = uploadFileDto.folderId ? Number(uploadFileDto.folderId) : null;
         let targetUserId = userContext.userId;
-        if (folderId) {
-            if (isNaN(folderId)) {
+        if (uploadFileDto.folderId) {
+            if (isNaN(uploadFileDto.folderId)) {
                 throw new common_1.BadRequestException('folderId phải là một số hợp lệ');
             }
-            const folder = await this.filesService.findFolderById(userContext, { folderId });
+            const folder = await this.filesService.findFolderById(userContext, { folderId: uploadFileDto.folderId });
             if (!folder) {
                 throw new common_1.NotFoundException('Thư mục không tồn tại');
             }
@@ -181,7 +177,7 @@ __decorate([
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
     (0, swagger_1.ApiOperation)({ summary: 'Lấy thông tin thư mục theo ID' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Thông tin thư mục' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tồn tại' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)()),
     __metadata("design:type", Function),
@@ -192,9 +188,9 @@ __decorate([
     (0, common_1.Patch)('folders/:folderId'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
-    (0, swagger_1.ApiOperation)({ summary: 'Cập nhật thông tin thư mục' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Cập nhật thư mục' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Thư mục được cập nhật thành công' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tồn tại' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)()),
     __param(2, (0, common_1.Body)()),
@@ -208,7 +204,7 @@ __decorate([
     (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
     (0, swagger_1.ApiOperation)({ summary: 'Xóa thư mục' }),
     (0, swagger_1.ApiResponse)({ status: 200, description: 'Thư mục được xóa thành công' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tìm thấy' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Thư mục không tồn tại' }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Param)()),
     __metadata("design:type", Function),
@@ -218,51 +214,26 @@ __decorate([
 __decorate([
     (0, common_1.Post)('upload'),
     (0, roles_decorator_1.Roles)('user', 'admin'),
-    (0, common_1.UsePipes)(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })),
-    (0, swagger_1.ApiOperation)({ summary: 'Tải lên tệp' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Upload tệp' }),
     (0, swagger_1.ApiConsumes)('multipart/form-data'),
     (0, swagger_1.ApiBody)({
-        description: 'Tệp và thông tin liên quan',
         schema: {
             type: 'object',
             properties: {
-                file: {
-                    type: 'string',
-                    format: 'binary',
-                    description: 'Tệp cần tải lên',
-                },
-                folderId: {
-                    type: 'number',
-                    description: 'ID của thư mục (tùy chọn)',
-                    example: 1,
-                    nullable: true,
-                },
+                file: { type: 'string', format: 'binary' },
+                folderId: { type: 'number' },
             },
         },
     }),
-    (0, swagger_1.ApiResponse)({
-        status: 201,
-        description: 'Tệp được tải lên thành công',
-        type: file_response_dto_1.FileResponseDto,
-    }),
-    (0, swagger_1.ApiResponse)({ status: 401, description: 'Không được phép (Unauthorized)' }),
-    (0, swagger_1.ApiResponse)({ status: 400, description: 'Yêu cầu không hợp lệ' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Tệp được upload thành công', type: file_response_dto_1.FileResponseDto }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: 'Dữ liệu không hợp lệ' }),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file', {
         storage: (0, multer_1.diskStorage)({
-            destination: (req, file, cb) => {
-                const userId = req.user?.id;
-                const uploadPath = (0, path_1.join)('./uploads', `user_${userId}`, 'temp');
-                if (!(0, fs_1.existsSync)(uploadPath)) {
-                    (0, fs_1.mkdirSync)(uploadPath, { recursive: true });
-                }
-                cb(null, uploadPath);
-            },
-            filename: (req, file, cb) => {
-                const randomName = Array(32)
-                    .fill(null)
-                    .map(() => Math.round(Math.random() * 16).toString(16))
-                    .join('');
-                cb(null, `${randomName}${(0, path_1.extname)(file.originalname)}`);
+            destination: './uploads/temp',
+            filename: (req, file, callback) => {
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+                const filename = `${uniqueSuffix}${(0, path_1.extname)(file.originalname)}`;
+                callback(null, filename);
             },
         }),
     })),

@@ -1,5 +1,36 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsString, IsOptional } from 'class-validator';
+import { IsNumber, IsString, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class OwnerDto {
+  @ApiProperty({ description: 'ID của người sở hữu', example: 25 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({ description: 'Tên người dùng', example: 'user1' })
+  @IsString()
+  username: string;
+}
+
+class FolderDto {
+  @ApiProperty({ description: 'ID của thư mục', example: 1 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({ description: 'Tên thư mục', example: 'MyFolder' })
+  @IsString()
+  name: string;
+}
+
+class CategoryDto {
+  @ApiProperty({ description: 'ID của category', example: 1 })
+  @IsNumber()
+  id: number;
+
+  @ApiProperty({ description: 'Tên category', example: 'Documents' })
+  @IsString()
+  name: string;
+}
 
 export class FileResponseDto {
   @ApiProperty({
@@ -39,23 +70,27 @@ export class FileResponseDto {
 
   @ApiProperty({
     description: 'Thông tin chủ sở hữu file',
-    type: 'object',
-    properties: {
-      id: { type: 'number', example: 25 },
-      username: { type: 'string', example: 'user1' },
-    },
+    type: OwnerDto,
   })
-  owner: { id: number; username: string };
+  @ValidateNested()
+  @Type(() => OwnerDto)
+  owner: OwnerDto;
 
   @ApiProperty({
     description: 'Thông tin thư mục chứa file (nếu có)',
-    type: 'object',
+    type: FolderDto,
     nullable: true,
-    properties: {
-      id: { type: 'number', example: 1 },
-      name: { type: 'string', example: 'MyFolder' },
-    },
   })
   @IsOptional()
-  folder?: { id: number; name: string };
+  @ValidateNested()
+  @Type(() => FolderDto)
+  folder?: FolderDto;
+
+  @ApiProperty({
+    description: 'Thông tin category của file',
+    type: CategoryDto,
+  })
+  @ValidateNested()
+  @Type(() => CategoryDto)
+  category: CategoryDto;
 }

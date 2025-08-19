@@ -12,6 +12,49 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileResponseDto = void 0;
 const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
+class OwnerDto {
+    id;
+    username;
+}
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID của người sở hữu', example: 25 }),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], OwnerDto.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Tên người dùng', example: 'user1' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], OwnerDto.prototype, "username", void 0);
+class FolderDto {
+    id;
+    name;
+}
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID của thư mục', example: 1 }),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], FolderDto.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Tên thư mục', example: 'MyFolder' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], FolderDto.prototype, "name", void 0);
+class CategoryDto {
+    id;
+    name;
+}
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'ID của category', example: 1 }),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CategoryDto.prototype, "id", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ description: 'Tên category', example: 'Documents' }),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CategoryDto.prototype, "name", void 0);
 class FileResponseDto {
     id;
     name;
@@ -20,6 +63,7 @@ class FileResponseDto {
     size;
     owner;
     folder;
+    category;
 }
 exports.FileResponseDto = FileResponseDto;
 __decorate([
@@ -65,25 +109,30 @@ __decorate([
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Thông tin chủ sở hữu file',
-        type: 'object',
-        properties: {
-            id: { type: 'number', example: 25 },
-            username: { type: 'string', example: 'user1' },
-        },
+        type: OwnerDto,
     }),
-    __metadata("design:type", Object)
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => OwnerDto),
+    __metadata("design:type", OwnerDto)
 ], FileResponseDto.prototype, "owner", void 0);
 __decorate([
     (0, swagger_1.ApiProperty)({
         description: 'Thông tin thư mục chứa file (nếu có)',
-        type: 'object',
+        type: FolderDto,
         nullable: true,
-        properties: {
-            id: { type: 'number', example: 1 },
-            name: { type: 'string', example: 'MyFolder' },
-        },
     }),
     (0, class_validator_1.IsOptional)(),
-    __metadata("design:type", Object)
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => FolderDto),
+    __metadata("design:type", FolderDto)
 ], FileResponseDto.prototype, "folder", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: 'Thông tin category của file',
+        type: CategoryDto,
+    }),
+    (0, class_validator_1.ValidateNested)(),
+    (0, class_transformer_1.Type)(() => CategoryDto),
+    __metadata("design:type", CategoryDto)
+], FileResponseDto.prototype, "category", void 0);
 //# sourceMappingURL=file-response.dto.js.map

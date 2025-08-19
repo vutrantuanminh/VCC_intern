@@ -18,15 +18,20 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const file_entity_1 = require("./entities/file.entity");
 const folder_entity_1 = require("./entities/folder.entity");
+const category_entity_1 = require("../categories/entities/category.entity");
 const users_service_1 = require("../users/users.service");
 const fs_1 = require("fs");
+const path_1 = require("path");
+const extension_config_1 = require("../config/extension.config");
 let FilesService = class FilesService {
     fileRepository;
     folderRepository;
+    categoryRepository;
     usersService;
-    constructor(fileRepository, folderRepository, usersService) {
+    constructor(fileRepository, folderRepository, categoryRepository, usersService) {
         this.fileRepository = fileRepository;
         this.folderRepository = folderRepository;
+        this.categoryRepository = categoryRepository;
         this.usersService = usersService;
     }
     async checkAccess(userContext, resourceOwnerId, resourceType) {
@@ -96,26 +101,31 @@ let FilesService = class FilesService {
     async listFolders(userContext, operationDto) {
         const { userId, role } = userContext;
         const { folderId } = operationDto;
-        let whereCondition;
-        if (role === 'admin') {
-            whereCondition = { parent: folderId ? { id: (0, typeorm_2.Equal)(folderId) } : (0, typeorm_2.IsNull)() };
-        }
-        else {
-            whereCondition = { owner: { id: (0, typeorm_2.Equal)(userId) }, parent: folderId ? { id: (0, typeorm_2.Equal)(folderId) } : (0, typeorm_2.IsNull)() };
-        }
+        let queryOptions = {};
         if (folderId) {
-            const parent = await this.folderRepository.findOne({
+            const folder = await this.folderRepository.findOne({
                 where: { id: (0, typeorm_2.Equal)(folderId) },
                 relations: ['owner'],
             });
-            if (!parent)
-                throw new common_1.NotFoundException('Thư mục cha không tồn tại');
-            await this.checkAccess(userContext, parent.owner.id, 'folder');
+            if (!folder)
+                throw new common_1.NotFoundException('Thư mục không tồn tại');
+            await this.checkAccess(userContext, folder.owner.id, 'folder');
+            queryOptions = { where: { parent: { id: (0, typeorm_2.Equal)(folderId) } } };
+        }
+        else {
+            queryOptions = {
+                where: {
+                    parent: (0, typeorm_2.IsNull)(),
+                    ...(role !== 'admin' ? { owner: { id: (0, typeorm_2.Equal)(userId) } } : {}),
+                },
+            };
         }
         return this.folderRepository.find({
-            where: whereCondition,
+            ...queryOptions,
             relations: ['owner'],
             select: {
+                id: true,
+                name: true,
                 owner: { id: true, username: true },
             },
         });
@@ -126,13 +136,7 @@ let FilesService = class FilesService {
             throw new common_1.BadRequestException('folderId là bắt buộc');
         const folder = await this.folderRepository.findOne({
             where: { id: (0, typeorm_2.Equal)(folderId) },
-            relations: ['parent', 'owner'],
-            select: {
-                id: true,
-                name: true,
-                parent: { id: true, name: true },
-                owner: { id: true, username: true },
-            },
+            relations: ['owner'],
         });
         if (!folder)
             throw new common_1.NotFoundException('Thư mục không tồn tại');
@@ -141,75 +145,38 @@ let FilesService = class FilesService {
     }
     async updateFolder(userContext, operationDto, updateFolderDto) {
         const { folderId } = operationDto;
-        if (!folderId)
-            throw new common_1.BadRequestException('folderId là bắt buộc');
-        const folder = await this.folderRepository.findOne({
-            where: { id: (0, typeorm_2.Equal)(folderId) },
-            relations: ['parent', 'owner'],
-        });
-        if (!folder)
-            throw new common_1.NotFoundException('Thư mục không tồn tại');
-        await this.checkAccess(userContext, folder.owner.id, 'folder');
-        let newOwner = folder.owner;
-        if (userContext.role === 'admin' && updateFolderDto.ownerId) {
-            const user = await this.usersService.findOneById(updateFolderDto.ownerId);
-            if (!user)
-                throw new common_1.NotFoundException('Người dùng mới không tồn tại');
-            newOwner = user;
-        }
-        if (updateFolderDto.name)
-            folder.name = updateFolderDto.name;
-        if (updateFolderDto.parentId) {
+        const { name, parentId } = updateFolderDto;
+        const folder = await this.findFolderById(userContext, { folderId });
+        if (name)
+            folder.name = name;
+        if (parentId) {
             const parent = await this.folderRepository.findOne({
-                where: { id: (0, typeorm_2.Equal)(updateFolderDto.parentId) },
+                where: { id: (0, typeorm_2.Equal)(parentId) },
                 relations: ['owner'],
             });
             if (!parent)
                 throw new common_1.NotFoundException('Thư mục cha không tồn tại');
             await this.checkAccess(userContext, parent.owner.id, 'folder');
-            if (parent.owner.id !== newOwner.id) {
-                throw new common_1.BadRequestException('Thư mục cha phải thuộc về cùng người sở hữu với thư mục');
+            if (parent.owner.id !== folder.owner.id) {
+                throw new common_1.BadRequestException('Thư mục cha phải thuộc về cùng người sở hữu');
             }
             folder.parent = parent;
         }
-        else if (updateFolderDto.parentId === null) {
-            folder.parent = null;
-        }
-        if (userContext.role === 'admin' && updateFolderDto.ownerId) {
-            if (folder.parent && folder.parent.owner.id !== newOwner.id) {
-                throw new common_1.BadRequestException('Người sở hữu mới phải khớp với người sở hữu của thư mục cha');
-            }
-            folder.owner = newOwner;
-        }
-        const updatedFolder = await this.folderRepository.save(folder);
-        const files = await this.fileRepository.find({
-            where: { folder: { id: (0, typeorm_2.Equal)(folder.id) } },
-            relations: ['folder'],
-        });
-        for (const file of files) {
-            file.externalPath = await this.buildExternalPath(file, updatedFolder);
-            await this.fileRepository.save(file);
-        }
-        return updatedFolder;
+        return this.folderRepository.save(folder);
     }
     async deleteFolder(userContext, operationDto) {
         const { folderId } = operationDto;
         if (!folderId)
             throw new common_1.BadRequestException('folderId là bắt buộc');
-        const folder = await this.folderRepository.findOne({
-            where: { id: (0, typeorm_2.Equal)(folderId) },
-            relations: ['owner'],
-        });
-        if (!folder)
-            throw new common_1.NotFoundException('Thư mục không tồn tại');
-        await this.checkAccess(userContext, folder.owner.id, 'folder');
+        const folder = await this.findFolderById(userContext, { folderId });
         await this.folderRepository.remove(folder);
     }
     async uploadFile(userContext, file, uploadFileDto) {
-        const { userId } = userContext;
+        if (!file) {
+            throw new common_1.BadRequestException('Không có tệp được tải lên');
+        }
         const { folderId } = uploadFileDto;
-        let targetUserId = userId;
-        let folder;
+        let folder = null;
         if (folderId) {
             folder = await this.folderRepository.findOne({
                 where: { id: (0, typeorm_2.Equal)(folderId) },
@@ -218,45 +185,41 @@ let FilesService = class FilesService {
             if (!folder)
                 throw new common_1.NotFoundException('Thư mục không tồn tại');
             await this.checkAccess(userContext, folder.owner.id, 'folder');
-            targetUserId = folder.owner.id;
         }
-        const user = await this.usersService.findOneById(targetUserId);
-        if (!user)
-            throw new common_1.NotFoundException('Người dùng không tồn tại');
-        if (!(0, fs_1.existsSync)(file.path)) {
-            throw new common_1.BadRequestException('Tệp không được lưu trữ đúng cách trên hệ thống');
+        const extension = (0, path_1.extname)(file.originalname).toLowerCase();
+        const categoryName = extension_config_1.EXTENSION_CONFIG[extension] || 'Others';
+        const category = await this.categoryRepository.findOne({ where: { name: categoryName } });
+        if (!category) {
+            throw new common_1.BadRequestException(`Category "${categoryName}" không tồn tại`);
         }
-        const fileEntity = this.fileRepository.create({
+        const newFile = this.fileRepository.create({
             name: file.originalname,
             path: file.path,
             externalPath: '',
             mimeType: file.mimetype,
             size: file.size,
-            owner: {
-                id: user.id,
-                email: user.email,
-                username: user.username,
-                gender: user.gender,
-                phone_number: user.phone_number,
-            },
+            owner: { id: userContext.userId },
+            folder: folder || undefined,
+            category,
         });
-        if (folder) {
-            fileEntity.folder = folder;
-        }
-        const savedFile = await this.fileRepository.save(fileEntity);
-        savedFile.externalPath = await this.buildExternalPath(savedFile, folder);
-        await this.fileRepository.save(savedFile);
+        await this.fileRepository.save(newFile);
+        newFile.externalPath = await this.buildExternalPath(newFile, folder);
+        await this.fileRepository.save(newFile);
         return {
-            id: savedFile.id,
-            name: savedFile.name,
-            externalPath: savedFile.externalPath,
-            mimeType: savedFile.mimeType,
-            size: savedFile.size,
+            id: newFile.id,
+            name: newFile.name,
+            externalPath: newFile.externalPath,
+            mimeType: newFile.mimeType,
+            size: newFile.size,
             owner: {
-                id: savedFile.owner.id,
-                username: savedFile.owner.username,
+                id: newFile.owner.id,
+                username: newFile.owner.username,
             },
-            folder: savedFile.folder ? { id: savedFile.folder.id, name: savedFile.folder.name } : undefined,
+            folder: folder ? { id: folder.id, name: folder.name } : undefined,
+            category: {
+                id: newFile.category.id,
+                name: newFile.category.name,
+            },
         };
     }
     async findFileById(userContext, operationDto) {
@@ -265,7 +228,7 @@ let FilesService = class FilesService {
             throw new common_1.BadRequestException('fileId là bắt buộc');
         const file = await this.fileRepository.findOne({
             where: { id: (0, typeorm_2.Equal)(fileId) },
-            relations: ['folder', 'owner'],
+            relations: ['folder', 'owner', 'category'],
             select: {
                 id: true,
                 name: true,
@@ -274,6 +237,7 @@ let FilesService = class FilesService {
                 size: true,
                 owner: { id: true, username: true },
                 folder: { id: true, name: true },
+                category: { id: true, name: true },
             },
         });
         if (!file)
@@ -292,6 +256,10 @@ let FilesService = class FilesService {
                 username: file.owner.username,
             },
             folder: file.folder ? { id: file.folder.id, name: file.folder.name } : undefined,
+            category: {
+                id: file.category.id,
+                name: file.category.name,
+            },
         };
     }
     async listFiles(userContext, operationDto) {
@@ -317,7 +285,7 @@ let FilesService = class FilesService {
         }
         const files = await this.fileRepository.find({
             ...queryOptions,
-            relations: ['owner', 'folder'],
+            relations: ['owner', 'folder', 'category'],
             select: {
                 id: true,
                 name: true,
@@ -326,6 +294,7 @@ let FilesService = class FilesService {
                 size: true,
                 owner: { id: true, username: true },
                 folder: { id: true, name: true },
+                category: { id: true, name: true },
             },
         });
         for (const file of files) {
@@ -343,6 +312,10 @@ let FilesService = class FilesService {
                 username: file.owner.username,
             },
             folder: file.folder ? { id: file.folder.id, name: file.folder.name } : undefined,
+            category: {
+                id: file.category.id,
+                name: file.category.name,
+            },
         }));
     }
     async deleteFile(userContext, operationDto) {
@@ -367,7 +340,9 @@ exports.FilesService = FilesService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(file_entity_1.File)),
     __param(1, (0, typeorm_1.InjectRepository)(folder_entity_1.Folder)),
+    __param(2, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         users_service_1.UsersService])
 ], FilesService);

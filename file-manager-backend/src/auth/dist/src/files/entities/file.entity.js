@@ -13,6 +13,7 @@ exports.File = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../users/entities/user.entity");
 const folder_entity_1 = require("./folder.entity");
+const category_entity_1 = require("../../categories/entities/category.entity");
 let File = class File {
     id;
     name;
@@ -22,6 +23,7 @@ let File = class File {
     size;
     owner;
     folder;
+    category;
 };
 exports.File = File;
 __decorate([
@@ -56,6 +58,10 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => folder_entity_1.Folder, (folder) => folder.id, { nullable: true }),
     __metadata("design:type", folder_entity_1.Folder)
 ], File.prototype, "folder", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => category_entity_1.Category, { nullable: false }),
+    __metadata("design:type", category_entity_1.Category)
+], File.prototype, "category", void 0);
 exports.File = File = __decorate([
     (0, typeorm_1.Entity)()
 ], File);

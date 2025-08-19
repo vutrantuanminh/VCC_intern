@@ -6,14 +6,15 @@ import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 import { File } from './entities/file.entity';
 import { Folder } from './entities/folder.entity';
+import { Category } from '../categories/entities/category.entity';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     MulterModule.registerAsync({
-      useFactory: multerConfig, 
+      useFactory: multerConfig,
     }),
-    TypeOrmModule.forFeature([File, Folder]),
+    TypeOrmModule.forFeature([File, Folder, Category]),
     UsersModule,
   ],
   controllers: [FilesController],

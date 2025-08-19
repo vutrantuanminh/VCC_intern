@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { File } from './entities/file.entity';
 import { Folder } from './entities/folder.entity';
+import { Category } from '../categories/entities/category.entity';
 import { CreateFolderDto } from './dto/create-folder.dto';
 import { UpdateFolderDto } from './dto/update-folder.dto';
 import { FolderOperationDto } from './dto/folder-operation.dto';
@@ -12,8 +13,9 @@ import { UsersService } from '../users/users.service';
 export declare class FilesService {
     private fileRepository;
     private folderRepository;
+    private categoryRepository;
     private usersService;
-    constructor(fileRepository: Repository<File>, folderRepository: Repository<Folder>, usersService: UsersService);
+    constructor(fileRepository: Repository<File>, folderRepository: Repository<Folder>, categoryRepository: Repository<Category>, usersService: UsersService);
     checkAccess(userContext: UserContextDto, resourceOwnerId: number, resourceType: 'folder' | 'file'): Promise<void>;
     private buildExternalPath;
     createFolder(userContext: UserContextDto, createFolderDto: CreateFolderDto): Promise<Folder>;

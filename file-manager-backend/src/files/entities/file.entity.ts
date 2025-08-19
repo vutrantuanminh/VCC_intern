@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Folder } from './folder.entity';
+import { Category } from '../../categories/entities/category.entity';
 
 @Entity()
 export class File {
@@ -27,4 +28,7 @@ export class File {
 
   @ManyToOne(() => Folder, (folder) => folder.id, { nullable: true })
   folder: Folder; // Thư mục chứa file (có thể null)
+
+  @ManyToOne(() => Category, { nullable: false })
+  category: Category;
 }

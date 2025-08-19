@@ -15,6 +15,7 @@ const files_controller_1 = require("./files.controller");
 const files_service_1 = require("./files.service");
 const file_entity_1 = require("./entities/file.entity");
 const folder_entity_1 = require("./entities/folder.entity");
+const category_entity_1 = require("../categories/entities/category.entity");
 const users_module_1 = require("../users/users.module");
 let FilesModule = class FilesModule {
 };
@@ -25,7 +26,7 @@ exports.FilesModule = FilesModule = __decorate([
             platform_express_1.MulterModule.registerAsync({
                 useFactory: multer_config_1.default,
             }),
-            typeorm_1.TypeOrmModule.forFeature([file_entity_1.File, folder_entity_1.Folder]),
+            typeorm_1.TypeOrmModule.forFeature([file_entity_1.File, folder_entity_1.Folder, category_entity_1.Category]),
             users_module_1.UsersModule,
         ],
         controllers: [files_controller_1.FilesController],

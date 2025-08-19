@@ -72,7 +72,7 @@ export class FilesController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @ApiOperation({ summary: 'Lấy thông tin thư mục theo ID' })
   @ApiResponse({ status: 200, description: 'Thông tin thư mục' })
-  @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
+  @ApiResponse({ status: 404, description: 'Thư mục không tồn tại' })
   getFolderById(@Request() req, @Param() operationDto: FolderOperationDto) {
     const userContext: UserContextDto = {
       userId: req.user.id,
@@ -84,9 +84,9 @@ export class FilesController {
   @Patch('folders/:folderId')
   @Roles('user', 'admin')
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  @ApiOperation({ summary: 'Cập nhật thông tin thư mục' })
+  @ApiOperation({ summary: 'Cập nhật thư mục' })
   @ApiResponse({ status: 200, description: 'Thư mục được cập nhật thành công' })
-  @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
+  @ApiResponse({ status: 404, description: 'Thư mục không tồn tại' })
   updateFolder(@Request() req, @Param() operationDto: FolderOperationDto, @Body() updateFolderDto: UpdateFolderDto) {
     const userContext: UserContextDto = {
       userId: req.user.id,
@@ -100,7 +100,7 @@ export class FilesController {
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
   @ApiOperation({ summary: 'Xóa thư mục' })
   @ApiResponse({ status: 200, description: 'Thư mục được xóa thành công' })
-  @ApiResponse({ status: 404, description: 'Thư mục không tìm thấy' })
+  @ApiResponse({ status: 404, description: 'Thư mục không tồn tại' })
   deleteFolder(@Request() req, @Param() operationDto: FolderOperationDto) {
     const userContext: UserContextDto = {
       userId: req.user.id,
@@ -111,78 +111,43 @@ export class FilesController {
 
   @Post('upload')
   @Roles('user', 'admin')
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  @ApiOperation({ summary: 'Tải lên tệp' })
+  @ApiOperation({ summary: 'Upload tệp' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'Tệp và thông tin liên quan',
     schema: {
       type: 'object',
       properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Tệp cần tải lên',
-        },
-        folderId: {
-          type: 'number',
-          description: 'ID của thư mục (tùy chọn)',
-          example: 1,
-          nullable: true,
-        },
+        file: { type: 'string', format: 'binary' },
+        folderId: { type: 'number' },
       },
     },
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Tệp được tải lên thành công',
-    type: FileResponseDto,
-  })
-  @ApiResponse({ status: 401, description: 'Không được phép (Unauthorized)' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không hợp lệ' })
+  @ApiResponse({ status: 201, description: 'Tệp được upload thành công', type: FileResponseDto })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: (req, file, cb) => {
-          const userId = (req.user as any)?.id;
-          const uploadPath = join('./uploads', `user_${userId}`, 'temp');
-          if (!existsSync(uploadPath)) {
-            mkdirSync(uploadPath, { recursive: true });
-          }
-          cb(null, uploadPath);
-        },
-        filename: (req, file, cb) => {
-          const randomName = Array(32)
-            .fill(null)
-            .map(() => Math.round(Math.random() * 16).toString(16))
-            .join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
+        destination: './uploads/temp',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const filename = `${uniqueSuffix}${extname(file.originalname)}`;
+          callback(null, filename);
         },
       }),
     }),
   )
-  async uploadFile(
-    @Request() req,
-    @UploadedFile() file: Express.Multer.File,
-    @Body() uploadFileDto: UploadFileDto,
-  ): Promise<FileResponseDto> {
+  async uploadFile(@Request() req, @UploadedFile() file: Express.Multer.File, @Body() uploadFileDto: UploadFileDto) {
     const userContext: UserContextDto = {
       userId: req.user.id,
       role: req.user.role,
     };
 
-    if (!file) {
-      throw new BadRequestException('Không có tệp được tải lên');
-    }
-
-    const folderId = uploadFileDto.folderId ? Number(uploadFileDto.folderId) : null;
     let targetUserId = userContext.userId;
-
-    if (folderId) {
-      if (isNaN(folderId)) {
+    if (uploadFileDto.folderId) {
+      if (isNaN(uploadFileDto.folderId)) {
         throw new BadRequestException('folderId phải là một số hợp lệ');
       }
-      const folder = await this.filesService.findFolderById(userContext, { folderId });
+      const folder = await this.filesService.findFolderById(userContext, { folderId: uploadFileDto.folderId });
       if (!folder) {
         throw new NotFoundException('Thư mục không tồn tại');
       }

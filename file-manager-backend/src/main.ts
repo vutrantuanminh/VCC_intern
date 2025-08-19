@@ -10,13 +10,11 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get('Reflector')));
 
-  // Cấu hình CORS (tùy chọn, nhưng hữu ích cho frontend)
   app.enableCors({
     origin: configService.get<string>('FRONTEND_URL'),
     credentials: true,
   });
 
-  // Cấu hình Swagger
   const config = new DocumentBuilder()
     .setTitle('API Quản lý File')
     .setDescription('API để quản lý file và thư mục, đăng ký, đăng nhập người dùng')
